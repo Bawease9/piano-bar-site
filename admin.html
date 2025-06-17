@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Admin - Song Requests</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #121212;
+      color: #ffffff;
+      text-align: center;
+      margin: 0;
+      padding: 0;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 30px 8%;
+    }
+
+    h2 {
+      margin: 0;
+    }
+
+    #totalRequests {
+      font-size: 18px;
+      margin-bottom: 10px;
+    }
+
+    .reset-btn {
+      padding: 10px 16px;
+      border-radius: 10px;
+      border: none;
+      background-color: red;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    table {
+      margin: 0 auto;
+      border-collapse: collapse;
+      width: 85%;
+      margin-bottom: 40px;
+    }
+
+    th, td {
+      border: 1px solid #444;
+      padding: 12px 15px;
+    }
+
+    th {
+      background-color: #222;
+      color: white;
+    }
+
+    td:first-child {
+      font-weight: bold;
+      font-size: 1.2em;
+    }
+
+    .section-title {
+      font-size: 1.3em;
+      font-weight: bold;
+      margin: 30px 0 10px;
+    }
+
+    .button {
+      margin: 5px;
+      padding: 6px 12px;
+      font-weight: bold;
+      border-radius: 6px;
+      border: none;
+      color: white;
+      cursor: pointer;
+    }
+
+    .played-btn { background-color: #28a745; }
+    .unknown-btn { background-color: #007bff; }
+    .undo-btn { background-color: #ff9800; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h2>🎶 Admin - Song Requests 🎶</h2>
+    <button class="reset-btn" onclick="resetTables()">Reset All</button>
+  </div>
+  <p id="totalRequests">Total Requests: 0</p>
+
+  <table id="requestsTable">
+    <thead>
+      <tr>
+        <th>Song/Artist</th>
+        <th>Your Name</th>
+        <th>Dedication</th>
+        <th>Timestamp</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <div class="section-title">✅ Played Songs</div>
+  <table id="playedTable">
+    <thead>
+      <tr>
+        <th>Song/Artist</th>
+        <th>Your Name</th>
+        <th>Dedication</th>
+        <th>Timestamp</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <div class="section-title">🤷 Songs We Don't Know</div>
+  <table id="unknownTable">
+    <thead>
+      <tr>
+        <th>Song/Artist</th>
+        <th>Your Name</th>
+        <th>Dedication</th>
+        <th>Timestamp</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <script>
+    const sheetURL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRDNwOUT65Dwpzdmxn-3jEWzQV4X7HldEe-X2yB9iwgFVDXUSyLVQoTjukcSf06w-W7uhjaCIrmWxH5/pub?output=csv';
+    const appendedRows = new Set();
+
+    function formatTimestamp(ts) {
+      if (!ts) return '—';
+      const date = new Date(ts);
+      if (isNaN(date)) return ts;
+      const time = date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true });
+      const dateStr = date.toLocaleDateString();
+      return `${time} ${dateStr}`;
+    }
+
+    function createRow(cells, location = 'main') {
+      const tr = document.createElement('tr');
+      cells.forEach((text, i) => {
+        const td = document.createElement('td');
+        td.textContent = i === 3 ? formatTimestamp(text) : (text || '—');
+        if (i === 0) {
+          td.style.fontWeight = 'bold';
+          td.style.fontSize = '1.2em';
+        }
+        tr.appendChild(td);
+      });
+
+      const actionCell = document.createElement('td');
+      if (location === 'main') {
+        const playedBtn = document.createElement('button');
+        playedBtn.textContent = 'Mark as Played';
+        playedBtn.className = 'button played-btn';
+        playedBtn.onclick = () => moveRow(tr, 'played');
+
+        const unknownBtn = document.createElement('button');
+        unknownBtn.textContent = "Don't Know";
+        unknownBtn.className = 'button unknown-btn';
+        unknownBtn.onclick = () => moveRow(tr, 'unknown');
+
+        actionCell.appendChild(playedBtn);
+        actionCell.appendChild(unknownBtn);
+      } else {
+        const undoBtn = document.createElement('button');
+        undoBtn.textContent = 'Undo';
+        undoBtn.className = 'button undo-btn';
+        undoBtn.onclick = () => moveRow(tr, 'main');
+        actionCell.appendChild(undoBtn);
+      }
+
+      tr.appendChild(actionCell);
+      return tr;
+    }
+
+ function moveRow(row, destination) {
+  // Extract cell text content without changing the timestamp
+  const cells = Array.from(row.cells).slice(0, 4).map(cell => cell.textContent);
+
+  // Create a new row with the same data and updated location
+  const newRow = createRow(cells, destination);
+
+  if (destination === 'played') {
+    document.querySelector('#playedTable tbody').appendChild(newRow);
+  } else if (destination === 'unknown') {
+    document.querySelector('#unknownTable tbody').appendChild(newRow);
+  } else {
+    document.querySelector('#requestsTable tbody').appendChild(newRow);
+  }
+
+  row.remove();
+}
+
+
+    function resetTables() {
+      document.querySelector('#requestsTable tbody').innerHTML = '';
+      document.querySelector('#playedTable tbody').innerHTML = '';
+      document.querySelector('#unknownTable tbody').innerHTML = '';
+      appendedRows.clear();
+    }
+
+    function fetchAndAppendNewRows() {
+      const urlWithBypass = sheetURL + '&nocache=' + Date.now();
+      fetch(urlWithBypass)
+        .then(response => response.text())
+        .then(csv => {
+          const lines = csv.trim().split('\n');
+          const rows = lines.slice(1).map(line => {
+            const [song, name, dedication, timestamp] = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(cell => cell.replace(/^"|"$/g, '').trim());
+            return { song, name, dedication, timestamp };
+          });
+
+          rows.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+          const tbody = document.querySelector('#requestsTable tbody');
+          let newCount = 0;
+
+          rows.forEach(row => {
+            const key = `${row.song}|${row.name}|${row.dedication}|${row.timestamp}`;
+            if (!appendedRows.has(key)) {
+              appendedRows.add(key);
+              const newRow = createRow([row.song, row.name, row.dedication, row.timestamp], 'main');
+              tbody.insertBefore(newRow, tbody.firstChild);
+              newCount++;
+            }
+          });
+
+          document.getElementById('totalRequests').textContent = `Total Requests: ${appendedRows.size}`;
+        });
+    }
+
+    fetchAndAppendNewRows();
+    setInterval(fetchAndAppendNewRows, 5000); // refresh every 5 seconds
+  </script>
+</body>
+</html>
