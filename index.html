@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Brady & Caroline Requests</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #fff;
+      color: #111;
+      padding: 20px;
+      text-align: center;
+      margin: 0;
+    }
+    img {
+      width: 180px;
+      margin-top: 10px;
+      margin-bottom: 20px;
+    }
+    .container {
+      max-width: 500px;
+      margin: 0 auto;
+      padding: 0 20px;
+    }
+    input {
+      width: 100%;
+      box-sizing: border-box;
+      margin: 10px 0;
+      padding: 12px;
+      font-size: 16px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+    }
+    .submit-button {
+      width: 100%;
+      padding: 18px 0;
+      margin-top: 20px;
+      font-size: 18px;
+      font-weight: bold;
+      border: none;
+      border-radius: 999px;
+      cursor: pointer;
+      background-color: #000;
+      color: white;
+      transition: background 0.3s ease;
+      position: relative;
+    }
+    .submit-button:hover {
+      background-color: #333;
+    }
+    .spinner {
+      width: 22px;
+      height: 22px;
+      border: 3px solid #fff;
+      border-top: 3px solid transparent;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      position: absolute;
+      right: 20px;
+      top: 50%;
+      transform: translateY(-50%);
+      display: none;
+    }
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+    h1 {
+      font-size: 1.5em;
+      margin: 20px 0;
+    }
+    .emoji {
+      font-size: 1.1em;
+      margin: 0 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <img src="logo.png.jpeg" alt="Brady and Caroline Logo" />
+    <h1><span class="emoji">🎶</span> Make A Request <span class="emoji">🎶</span></h1>
+
+    <form id="requestForm">
+      <input type="text" name="song" placeholder="Song/Artist" required />
+      <input type="text" name="name" placeholder="Your Name" />
+      <input type="text" name="dedication" placeholder="Dedication (optional)" />
+      <button type="submit" class="submit-button">
+        <span class="button-text">Submit Request</span>
+        <div class="spinner" id="spinner"></div>
+      </button>
+    </form>
+  </div>
+
+  <script>
+    const form = document.getElementById("requestForm");
+    const button = form.querySelector("button");
+    const spinner = document.getElementById("spinner");
+    const buttonText = button.querySelector(".button-text");
+
+    form.addEventListener("submit", function (e) {
+      e.preventDefault();
+      const formData = new FormData(this);
+      const data = Object.fromEntries(formData.entries());
+
+      // Show loading spinner + disable button
+      button.disabled = true;
+      spinner.style.display = "inline-block";
+      buttonText.textContent = "Submitting...";
+
+      fetch("https://hook.us2.make.com/wh9j7c3uvdmoohvi4vzlpcg2wuuwht77", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+      })
+      .then(() => {
+        window.location.href = "thankyou.html";
+      })
+      .catch((error) => {
+        alert("Something went wrong!");
+        console.error(error);
+        // Reset button state
+        button.disabled = false;
+        spinner.style.display = "none";
+        buttonText.textContent = "Submit Request";
+      });
+    });
+  </script>
+</body>
+</html>
